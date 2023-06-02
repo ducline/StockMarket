@@ -33,7 +33,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>stock-market.ico</ApplicationIcon>
+    <ApplicationIcon>Images\stock-market.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject>
@@ -94,6 +94,30 @@
     <Compile Include="Login.Designer.cs">
       <DependentUpon>Login.cs</DependentUpon>
     </Compile>
+    <Compile Include="Pages\RankingsPage.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Pages\RankingsPage.Designer.cs">
+      <DependentUpon>RankingsPage.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Pages\SettingsPage.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Pages\SettingsPage.Designer.cs">
+      <DependentUpon>SettingsPage.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Pages\ShopPage.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Pages\ShopPage.Designer.cs">
+      <DependentUpon>ShopPage.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Pages\WalletPage.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Pages\WalletPage.Designer.cs">
+      <DependentUpon>WalletPage.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Pages\AdminPage.resx">
@@ -105,6 +129,18 @@
     <EmbeddedResource Include="Login.resx">
       <DependentUpon>Login.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Pages\RankingsPage.resx">
+      <DependentUpon>RankingsPage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Pages\SettingsPage.resx">
+      <DependentUpon>SettingsPage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Pages\ShopPage.resx">
+      <DependentUpon>ShopPage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Pages\WalletPage.resx">
+      <DependentUpon>WalletPage.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -113,6 +149,7 @@
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
     </Compile>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
@@ -129,7 +166,15 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="stock-market.ico" />
+    <Content Include="Images\bitcoin.png" />
+    <Content Include="Images\decrease.png" />
+    <Content Include="Images\financial-profit.png" />
+    <Content Include="Images\increase.png" />
+    <Content Include="Images\newspaper.png" />
+    <Content Include="Images\off-button.png" />
+    <Content Include="Images\on-button.png" />
+    <Content Include="Images\stock-market.ico" />
+    <Content Include="Images\wallet.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

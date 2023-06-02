@@ -33,9 +33,9 @@ namespace StockMarket
 
                 while (reader.Read())
                 {
-                    if (textBox1.Text == reader.GetString(2) && textBox2.Text == reader.GetString(3))
+                    if (textBox1.Text == reader.GetString(3) && textBox2.Text == reader.GetString(4))
                     {
-                        Form Form1 = new Form1(reader.GetString(2), reader.GetInt32(0).ToString());
+                        Form Form1 = new Form1(reader.GetString(3), reader.GetInt32(0).ToString());
                         this.Hide();
                         Form1.Show();
                     }
