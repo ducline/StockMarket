@@ -20,7 +20,7 @@ namespace StockMarket
     public partial class Form1 : Form
     {
         //BEGIN INFO UPDATER
-
+        bool load = true;
         private void NewsPage()
         {
             pictureBox6.Visible = false;
@@ -39,6 +39,8 @@ namespace StockMarket
                     int yLocation = 10;
                     while (result.Read())
                     {
+                        if (load) { counter = 7; load = false; }
+
                         string title = result.GetString(0);
                         string description = result.GetString(1);
 
@@ -761,30 +763,29 @@ namespace StockMarket
 
         private int NewsRelationCounter(bool positive)
         {
-            string response = "=";
-            if (positive) { response = ">"; } else { response = "<"; }
+            string response = (positive) ? ">" : "<";
 
-            string connetionString = "datasource=192.168.1.1;port=3306;username=psb202199;password=psb202199;database=psb202199_stockmarket;";
+            string connectionString = "datasource=192.168.1.1;port=3306;username=psb202199;password=psb202199;database=psb202199_stockmarket;";
 
-            using (var cnn = new MySqlConnection(connetionString))
+            using (var connection = new MySqlConnection(connectionString))
             {
-                cnn.Open();
+                connection.Open();
 
-                var command = cnn.CreateCommand();
+                var command = connection.CreateCommand();
                 command.CommandText = "SELECT COUNT(*) FROM newscompany_relation WHERE effect " + response + " 0;";
-                using (var result = command.ExecuteReader())
+
+                using (var reader = command.ExecuteReader())
                 {
-                    while (result.Read())
+                    if (reader.Read())
                     {
-                        return Convert.ToInt32(result.GetString(0));
+                        return Convert.ToInt32(reader.GetInt64(0));
                     }
                 }
-
             }
 
             return 0;
-
         }
+
 
         private void CreateNews(bool positive)
         {
@@ -922,13 +923,29 @@ namespace StockMarket
             }
         }
 
+        private void ClearActiveNews()
+        {
+            string connetionString = "datasource=192.168.1.1;port=3306;username=psb202199;password=psb202199;database=psb202199_stockmarket;";
+
+            using (var cnn = new MySqlConnection(connetionString))
+            {
+                cnn.Open();
+
+                var command = cnn.CreateCommand();
+                command.CommandText = "UPDATE news SET active = 0";
+                command.ExecuteReader();
+
+                cnn.Close();
+
+            }
+        }
+
         int counter = 0;
         private void UpdateInfo(string Button)
         {
             Random random = new Random();
 
-            int chance = random.Next(1, 3);
-            pictureBox5.Visible = false;
+            int chance = random.Next(1, 4);
             while (counter > 0){ UpdateActiveNews(); counter--; pictureBox5.Visible = true; }
 
             if (chance == 1) // NEWS HAPPENS
