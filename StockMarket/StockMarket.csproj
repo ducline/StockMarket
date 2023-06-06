@@ -8,10 +8,11 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace>StockMarket</RootNamespace>
     <AssemblyName>StockMarket</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -94,18 +95,6 @@
     <Compile Include="Login.Designer.cs">
       <DependentUpon>Login.cs</DependentUpon>
     </Compile>
-    <Compile Include="Pages\RankingsPage.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Pages\RankingsPage.Designer.cs">
-      <DependentUpon>RankingsPage.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Pages\SettingsPage.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Pages\SettingsPage.Designer.cs">
-      <DependentUpon>SettingsPage.cs</DependentUpon>
-    </Compile>
     <Compile Include="Pages\ShopPage.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -128,12 +117,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Login.resx">
       <DependentUpon>Login.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Pages\RankingsPage.resx">
-      <DependentUpon>RankingsPage.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Pages\SettingsPage.resx">
-      <DependentUpon>SettingsPage.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Pages\ShopPage.resx">
       <DependentUpon>ShopPage.cs</DependentUpon>
@@ -168,9 +151,11 @@
   <ItemGroup>
     <Content Include="Images\bitcoin.png" />
     <Content Include="Images\decrease.png" />
+    <Content Include="Images\fake-news.png" />
     <Content Include="Images\financial-profit.png" />
     <Content Include="Images\increase.png" />
     <Content Include="Images\newspaper.png" />
+    <Content Include="Images\notification.png" />
     <Content Include="Images\off-button.png" />
     <Content Include="Images\on-button.png" />
     <Content Include="Images\stock-market.ico" />

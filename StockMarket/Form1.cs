@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -22,6 +23,8 @@ namespace StockMarket
 
         private void NewsPage()
         {
+            pictureBox6.Visible = false;
+
             string connetionString = "datasource=192.168.1.1;port=3306;username=psb202199;password=psb202199;database=psb202199_stockmarket;";
 
             using (var cnn = new MySqlConnection(connetionString))
@@ -29,7 +32,7 @@ namespace StockMarket
                 cnn.Open();
 
                 var command = cnn.CreateCommand();
-                command.CommandText = "SELECT title, description FROM news";
+                command.CommandText = "SELECT title, description FROM news WHERE active = 1";
 
                 using (var result = command.ExecuteReader())
                 {
@@ -108,6 +111,7 @@ namespace StockMarket
                         companyname.Text = compname;
                         companyname.Font = new Font(companyname.Font.Name, 20, FontStyle.Bold);
                         companyname.TextAlign = ContentAlignment.MiddleCenter;
+                        companyname.Name = boughtstockid.ToString();
 
                         Label stockprice = new Label();
                         stockprice.MaximumSize = new Size(800, 50);
@@ -117,7 +121,17 @@ namespace StockMarket
                         stockprice.Text =  (stock_price * stockamount).ToString();
                         stockprice.Font = new Font(stockprice.Font.Name, 20, FontStyle.Bold);
                         stockprice.TextAlign = ContentAlignment.MiddleCenter;
-                        stockprice.Name = compname;
+                        stockprice.Name = boughtstockid.ToString();
+
+                        Label stockcount = new Label();
+                        stockcount.MaximumSize = new Size(800, 50);
+                        stockcount.AutoSize = true;
+                        stockcount.Location = new Point(400, yLocation + 30);
+                        panel1.Controls.Add(stockcount);
+                        stockcount.Text = stockamount.ToString();
+                        stockcount.Font = new Font(stockcount.Font.Name, 10, FontStyle.Bold);
+                        stockcount.TextAlign = ContentAlignment.MiddleCenter;
+                        stockcount.Name = compname + "_stockcount";
 
                         double expectedValue = stock_price * stockamount;
                         double difference = moneyspent - expectedValue;
@@ -152,7 +166,10 @@ namespace StockMarket
                         sellstock.Parent = this.panel1;
                         sellstock.TabIndex = 1;
                         sellstock.Name = boughtstockid.ToString();
-                        sellstock.Tag = stockamount;
+                        // Setting multiple values in the Tag property
+                        string[] values = { companyid.ToString(), (stock_price * stockamount).ToString(), stockamount.ToString() };
+                        sellstock.Tag = values;
+
                         sellstock.Click += Sellstock_Click;
 
                         NumericUpDown amount = new NumericUpDown();
@@ -163,15 +180,15 @@ namespace StockMarket
                         amount.Value = 5;
                         amount.TabIndex = 2;
                         amount.Maximum = stockamount;
-                        amount.Name = compname;
+                        amount.Name = boughtstockid.ToString();
 
-                        Button sellall = new Button();
-                        sellall.Text = "SELL ALL";
-                        sellall.Size = new Size(50, 30);
-                        sellall.Location = new Point(650, yLocation);
-                        sellall.Parent = this.panel1;
-                        sellall.TabIndex = 1;
-                        sellall.Name = compname;
+                        //Button sellall = new Button();
+                        //sellall.Text = "SELL ALL";
+                        //sellall.Size = new Size(50, 30);
+                        //sellall.Location = new Point(650, yLocation);
+                        //sellall.Parent = this.panel1;
+                        //sellall.TabIndex = 1;
+                        //sellall.Name = compname;
                         //sellall.Click += Sellstock_Click;
 
                         yLocation += 50;
@@ -184,24 +201,37 @@ namespace StockMarket
         {
             Button button = sender as Button;
             string boughtstockid = button.Name;
-            int ownedstock = Convert.ToInt32(button.Tag.ToString());
             int stockamount = 0;
-            int overallstockvalue = 0;
+
+            string[] retrievedValues = button.Tag as string[];
+            int companyid = Convert.ToInt32(retrievedValues[0]);
+            int overallstockvalue = Convert.ToInt32(retrievedValues[1]);
+            int ownedstock = Convert.ToInt32(retrievedValues[2]);
+            string compname = FindCompanyNameById(companyid);
+            int updatedstockcount = 0;
+
+
 
             foreach (Control control in panel1.Controls)
             {
                 if (control.Name != button.Name) { continue; }
                 if (control is NumericUpDown)
                 {
-                    NumericUpDown num = control as NumericUpDown;
-                    stockamount = (int)num.Value;
-                }
-                if (control is Label)
-                {
-                    Label stk = control as Label;
-                    overallstockvalue = Convert.ToInt32(stk.Text);
+                    NumericUpDown numericUpDown = (NumericUpDown)control;
+                    stockamount = (int)numericUpDown.Value;
                 }
 
+            }
+
+            foreach (Control control in panel1.Controls)
+            {
+                if (control.Name == (compname + "_stockcount"))
+                {
+                    int newvalue = Convert.ToInt32(control.Text) - stockamount;
+                    updatedstockcount = newvalue;
+                    if (updatedstockcount < 0) { return; }
+                    control.Text = newvalue.ToString();
+                }
             }
 
 
@@ -219,70 +249,86 @@ namespace StockMarket
                 var command = cnn.CreateCommand();
                 command.CommandText = "SELECT cash, stock FROM user WHERE id = '" + UserIDBox.Text + "'";
                 int cash = 0;
-                int crypto = 0;
+                int stock = 0;
                 using (var result = command.ExecuteReader())
                 {
                     while (result.Read())
                     {
                         cash = (int)result.GetValue(0);
-                        crypto = (int)result.GetValue(1);
+                        stock = (int)result.GetValue(1);
 
-                        cash -= price;
-                        label2.Text = "€" + cash.ToString();
+                        stock -= stockamount;
+                        cash += moneyToAdd;
+                        label2.Text = cash.ToString() + " EUR";
 
                     }
                 }
 
-                command.CommandText = "UPDATE user SET cash = " + cash + " WHERE id = '" + UserIDBox.Text + "'";
+                command.CommandText = "UPDATE user SET cash = " + cash + ", stock = " + stock + " WHERE id = '" + UserIDBox.Text + "'";
                 command.ExecuteReader();
 
+                cnn.Close();
+                cnn.Open();
+
+                command.CommandText = "UPDATE boughtstock SET stockamount = " + updatedstockcount + " WHERE boughtstockid = '" + boughtstockid + "'";
+                command.ExecuteReader();
 
                 cnn.Close();
-                cnn.Open(); // FIND COMPANYID BY NAME
+                cnn.Open();
 
-                var findcompany = cnn.CreateCommand();
-                findcompany.CommandText = "SELECT companyID FROM company WHERE name = '" + company + "'";
-                int companyid = 0;
-                using (var result = findcompany.ExecuteReader())
+                if (updatedstockcount == 0) 
                 {
-                    while (result.Read())
-                    {
-                        companyid = (int)result.GetValue(0);
-                    }
+                    command.CommandText = "DELETE FROM boughtstock WHERE boughtstockid = " + boughtstockid;
+                    command.ExecuteReader();
                 }
 
                 cnn.Close();
-                cnn.Open(); //CHECK IF STOCK ALREADY BOUGHT BY USER TO ADD TO IT OR UPDATE
 
-                var boughtstock = cnn.CreateCommand();
-                boughtstock.CommandText = "SELECT * FROM boughtstock WHERE userid = '" + UserIDBox.Text + "' AND  companyid = '" + companyid + "'";
-                int boughtstockid = 0;
-                int currentamount = 0;
-                int moneyspent = 0;
-                using (var result = boughtstock.ExecuteReader())
-                {
-                    while (result.Read())
-                    {
-                        boughtstockid = (int)result.GetValue(0);
-                        currentamount = (int)result.GetValue(3);
-                        moneyspent = (int)result.GetValue(4);
-                        price += moneyspent;
-                        stockamount += currentamount;
+                //cnn.Open(); // FIND COMPANYID BY NAME
 
-                        UpdateStock(stockamount, boughtstockid, price);
-                        return;
+                //var findcompany = cnn.CreateCommand();
+                //findcompany.CommandText = "SELECT companyID FROM company WHERE name = '" + company + "'";
+                //int companyid = 0;
+                //using (var result = findcompany.ExecuteReader())
+                //{
+                //    while (result.Read())
+                //    {
+                //        companyid = (int)result.GetValue(0);
+                //    }
+                //}
+
+                //cnn.Close();
+                //cnn.Open(); //CHECK IF STOCK ALREADY BOUGHT BY USER TO ADD TO IT OR UPDATE
+
+                //var boughtstock = cnn.CreateCommand();
+                //boughtstock.CommandText = "SELECT * FROM boughtstock WHERE userid = '" + UserIDBox.Text + "' AND  companyid = '" + companyid + "'";
+                //int boughtstockid = 0;
+                //int currentamount = 0;
+                //int moneyspent = 0;
+                //using (var result = boughtstock.ExecuteReader())
+                //{
+                //    while (result.Read())
+                //    {
+                //        boughtstockid = (int)result.GetValue(0);
+                //        currentamount = (int)result.GetValue(3);
+                //        moneyspent = (int)result.GetValue(4);
+                //        price += moneyspent;
+                //        stockamount += currentamount;
+
+                //        UpdateStock(stockamount, boughtstockid, price);
+                //        return;
 
 
-                    }
-                }
+                //    }
+                //}
 
 
 
 
-                boughtstock.CommandText = "INSERT INTO boughtstock (userid, companyid, stockamount, moneyspent) VALUES (" + UserIDBox.Text + ", " + companyid + ", " + stockamount + ", " + price + ");";
-                boughtstock.ExecuteReader();
+                //boughtstock.CommandText = "INSERT INTO boughtstock (userid, companyid, stockamount, moneyspent) VALUES (" + UserIDBox.Text + ", " + companyid + ", " + stockamount + ", " + price + ");";
+                //boughtstock.ExecuteReader();
 
-                cnn.Close();
+                //cnn.Close();
             }
 
 
@@ -474,23 +520,24 @@ namespace StockMarket
                 var command = cnn.CreateCommand();
                 command.CommandText = "SELECT cash, stock FROM user WHERE id = '" + UserIDBox.Text + "'";
                 int cash = 0;
-                int crypto = 0;
+                int stock = 0;
                 using (var result = command.ExecuteReader())
                 {
                     while (result.Read())
                     {
                         cash = (int)result.GetValue(0);
-                        crypto = (int)result.GetValue(1);
+                        stock = (int)result.GetValue(1);
 
                         if ((cash - price) < 0) { button.Text = "INSUFFICIENT MONEY"; button.ForeColor = Color.Red; return; }
 
+                        stock += stockamount;
                         cash -= price;
-                        label2.Text = "€" + cash.ToString();
+                        label2.Text = cash.ToString() + " EUR";
 
                     }
                 }
 
-                command.CommandText = "UPDATE user SET cash = " + cash + " WHERE id = '" + UserIDBox.Text + "'";
+                command.CommandText = "UPDATE user SET cash = " + cash + ", stock = " + stock + " WHERE id = '" + UserIDBox.Text + "'";
                 command.ExecuteReader();
 
 
@@ -563,7 +610,7 @@ namespace StockMarket
 
         private void AdminPage()
         {
-            AdminPage admin = new AdminPage();
+            AdminPage admin = new AdminPage(UserIDBox.Text, label2);
             admin.TopLevel = false;
             admin.Parent = this.panel1;
             admin.Dock = DockStyle.Fill;
@@ -573,12 +620,54 @@ namespace StockMarket
 
         private void RankingsPage()
         {
+            string connetionString = "datasource=192.168.1.1;port=3306;username=psb202199;password=psb202199;database=psb202199_stockmarket;";
 
+            using (var cnn = new MySqlConnection(connetionString))
+            {
+                cnn.Open();
+
+                var command = cnn.CreateCommand();
+                command.CommandText = "SELECT username, cash FROM user ORDER BY cash DESC";
+
+                using (var result = command.ExecuteReader())
+                {
+                    int yLocation = 50;
+                    int position = 1;
+
+                    while (result.Read())
+                    {
+                        int cash = (int)result.GetValue(1);
+                        string username = result.GetString(0);
+
+                        Label name = new Label();
+                        name.MaximumSize = new Size(800, 50);
+                        name.AutoSize = true;
+                        name.Location = new Point(0, yLocation);
+                        panel1.Controls.Add(name);
+                        name.Text = "[" + position + "] " + username;
+                        name.Font = new Font(name.Font.Name, 20, FontStyle.Bold);
+                        name.TextAlign = ContentAlignment.MiddleCenter;
+
+                        Label amount = new Label();
+                        amount.MaximumSize = new Size(800, 50);
+                        amount.AutoSize = true;
+                        amount.Location = new Point(400, yLocation);
+                        panel1.Controls.Add(amount);
+                        amount.Text = cash.ToString();
+                        amount.Font = new Font(amount.Font.Name, 20, FontStyle.Bold);
+                        amount.TextAlign = ContentAlignment.MiddleCenter;
+
+                        position++;
+                        yLocation += 50;
+                    }
+                }
+            }
         }
+
 
         private void SettingsPage()
         {
-
+            
         }
 
         private void ClearInfo()
@@ -639,7 +728,7 @@ namespace StockMarket
                     Random random = new Random();
                     while (result.Read())
                     {
-                        int value = random.Next(-15, 20);
+                        int value = random.Next(-17, 15);
                         ChangeStockValue(result.GetString(1), value);
 
 
@@ -670,21 +759,192 @@ namespace StockMarket
             }
         }
 
+        private int NewsRelationCounter(bool positive)
+        {
+            string response = "=";
+            if (positive) { response = ">"; } else { response = "<"; }
+
+            string connetionString = "datasource=192.168.1.1;port=3306;username=psb202199;password=psb202199;database=psb202199_stockmarket;";
+
+            using (var cnn = new MySqlConnection(connetionString))
+            {
+                cnn.Open();
+
+                var command = cnn.CreateCommand();
+                command.CommandText = "SELECT COUNT(*) FROM newscompany_relation WHERE effect " + response + " 0;";
+                using (var result = command.ExecuteReader())
+                {
+                    while (result.Read())
+                    {
+                        return Convert.ToInt32(result.GetString(0));
+                    }
+                }
+
+            }
+
+            return 0;
+
+        }
+
+        private void CreateNews(bool positive)
+        {
+            int nrcounter = NewsRelationCounter(positive);
+            Random random = new Random();
+            int chance = random.Next(1, nrcounter);
+            int newsID = 0, effect = 0;
+
+            string connetionString = "datasource=192.168.1.1;port=3306;username=psb202199;password=psb202199;database=psb202199_stockmarket;";
+
+            using (var cnn = new MySqlConnection(connetionString))
+            {
+                cnn.Open();
+
+                var command = cnn.CreateCommand();
+                command.CommandText = "SELECT newsID, effect FROM newscompany_relation WHERE relationid = " + chance;
+                using (var result = command.ExecuteReader())
+                {
+                    while (result.Read())
+                    {
+                        newsID = (int)result.GetValue(0);
+                        effect = (int)result.GetValue(1);
+                    }
+                }
+
+                cnn.Close();
+
+                cnn.Open();
+
+                var command2 = cnn.CreateCommand();
+                command2.CommandText = "UPDATE news SET active = 1 WHERE newsID = " + newsID;
+                command2.ExecuteReader();
+
+                cnn.Close();
+
+            }
+        }
+
+        private int FindEffectbyNewsId(int newsID)
+        {
+            int effect = 0;
+
+            string connetionString = "datasource=192.168.1.1;port=3306;username=psb202199;password=psb202199;database=psb202199_stockmarket;";
+
+            using (var cnn = new MySqlConnection(connetionString))
+            {
+                cnn.Open();
+
+                var command = cnn.CreateCommand();
+                command.CommandText = "SELECT effect FROM newscompany_relation WHERE newsID = " + newsID;
+                using (var result = command.ExecuteReader())
+                {
+                    while (result.Read())
+                    {
+                        effect = (int)result.GetValue(0);
+                    }
+                }
+
+                cnn.Close();
+
+            }
+
+            return effect;
+        }
+
+        private int FindCompanyIdbyNewsId(int newsID)
+        {
+            int companyid = 0;
+
+            string connetionString = "datasource=192.168.1.1;port=3306;username=psb202199;password=psb202199;database=psb202199_stockmarket;";
+
+            using (var cnn = new MySqlConnection(connetionString))
+            {
+                cnn.Open();
+
+                var command = cnn.CreateCommand();
+                command.CommandText = "SELECT companyid FROM newscompany_relation WHERE newsID = " + newsID;
+                using (var result = command.ExecuteReader())
+                {
+                    while (result.Read())
+                    {
+                        companyid = (int)result.GetValue(0);
+                    }
+                }
+
+                cnn.Close();
+
+            }
+
+            return companyid;
+        }
+
+        private void UpdateEffect(int companyId, int effect)
+        {
+            string connetionString = "datasource=192.168.1.1;port=3306;username=psb202199;password=psb202199;database=psb202199_stockmarket;";
+            int newvalue = FindCompanyStockValueById(companyId) + effect;
+
+            using (var cnn = new MySqlConnection(connetionString))
+            {
+                cnn.Open();
+
+                var command = cnn.CreateCommand();
+                command.CommandText = "UPDATE company SET stock_price = " + newvalue + ", oldprice = " + FindCompanyStockValueById(companyId) + " WHERE companyID = " + companyId;
+                command.ExecuteReader();
+
+                cnn.Close();
+
+            }
+        }
+
+        private void UpdateActiveNews()
+        {
+            string connetionString = "datasource=192.168.1.1;port=3306;username=psb202199;password=psb202199;database=psb202199_stockmarket;";
+
+            using (var cnn = new MySqlConnection(connetionString))
+            {
+                cnn.Open();
+
+                var command = cnn.CreateCommand();
+                command.CommandText = "SELECT newsID FROM news WHERE active = 1";
+                using (var result = command.ExecuteReader())
+                {
+                    while (result.Read())
+                    {
+                        int newsID = (int)result.GetValue(0);
+                        int effect = FindEffectbyNewsId(newsID);
+                        int companyId = FindCompanyIdbyNewsId(newsID);
+
+                        UpdateEffect(companyId, effect);
+                    }
+                }
+
+                cnn.Close();
+
+            }
+        }
+
+        int counter = 0;
         private void UpdateInfo(string Button)
         {
             Random random = new Random();
 
-            int chance = random.Next(1, 31);
+            int chance = random.Next(1, 3);
+            pictureBox5.Visible = false;
+            while (counter > 0){ UpdateActiveNews(); counter--; pictureBox5.Visible = true; }
 
-            if (chance == 30) // NEWS HAPPENS
+            if (chance == 1) // NEWS HAPPENS
             {
+                counter = 7;
+                pictureBox5.Visible = true;
+                pictureBox6.Visible = true;
                 int value = random.Next(1, 101);
-                if (value < 60)
+                if (value > 80)
                 {
+                    CreateNews(false);
                     // BAD SHIT HAPPENS
                 } else
                 {
                     // GOOD SHIT HAPPENS
+                    CreateNews(true);
                 }
             } 
             //NORMAL FLUCTUATION OF STOCK PRICE
