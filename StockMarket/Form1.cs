@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.Design;
 using System.Data;
 using System.Data.SqlClient;
 using System.Drawing;
@@ -816,12 +817,14 @@ namespace StockMarket
                 cnn.Open();
 
                 var command2 = cnn.CreateCommand();
-                command2.CommandText = "UPDATE news SET active = 1 WHERE newsID = " + newsID;
+                command2.CommandText = "UPDATE news SET active = 1, remainingdays = 14 WHERE newsID = " + newsID;
                 command2.ExecuteReader();
 
                 cnn.Close();
 
             }
+
+            pictureBox6.Visible = true;
         }
 
         private int FindEffectbyNewsId(int newsID)
@@ -876,7 +879,7 @@ namespace StockMarket
             }
 
             return companyid;
-        }
+        }.
 
         private void UpdateEffect(int companyId, int effect)
         {
@@ -888,11 +891,69 @@ namespace StockMarket
                 cnn.Open();
 
                 var command = cnn.CreateCommand();
-                command.CommandText = "UPDATE company SET stock_price = " + newvalue + ", oldprice = " + FindCompanyStockValueById(companyId) + " WHERE companyID = " + companyId;
+                command.CommandText = "UPDATE company SET stock_price = " + (newvalue * 2) + " WHERE companyID = " + companyId;
                 command.ExecuteReader();
 
                 cnn.Close();
 
+            }
+        }
+
+        private int FindRemainingDays(int newsID)
+        {
+            string connetionString = "datasource=192.168.1.1;port=3306;username=psb202199;password=psb202199;database=psb202199_stockmarket;";
+
+            using (var cnn = new MySqlConnection(connetionString))
+            {
+                cnn.Open();
+
+                var command = cnn.CreateCommand();
+                command.CommandText = "SELECT remainingdays FROM news WHERE newsID = " +  newsID;
+                using (var result = command.ExecuteReader())
+                {
+                    while (result.Read())
+                    {
+                        int remainingdays = (int)result.GetValue(0);
+                        return remainingdays;
+                    }
+                }
+
+                cnn.Close();
+
+            }
+
+            return 0;
+        }
+
+        private void DecreaseRemainingDays(int newsID)
+        {
+            string connetionString = "datasource=192.168.1.1;port=3306;username=psb202199;password=psb202199;database=psb202199_stockmarket;";
+
+            using (var cnn = new MySqlConnection(connetionString))
+            {
+                cnn.Open();
+
+                var command = cnn.CreateCommand();
+                command.CommandText = "UPDATE news SET remainingdays = " + (FindRemainingDays(newsID) - 1) + " WHERE newsID = " + newsID;
+                command.ExecuteReader();
+
+                cnn.Close();
+
+            }
+
+            if (FindRemainingDays(newsID) == 0)
+            {
+                using (var cnn = new MySqlConnection(connetionString))
+                {
+                    cnn.Open();
+
+                    var command = cnn.CreateCommand();
+                    command.CommandText = "UPDATE news SET active = 0 WHERE newsID = " + newsID;
+                    command.ExecuteReader();
+
+                    cnn.Close();
+
+                }
             }
         }
 
@@ -914,26 +975,10 @@ namespace StockMarket
                         int effect = FindEffectbyNewsId(newsID);
                         int companyId = FindCompanyIdbyNewsId(newsID);
 
+                        DecreaseRemainingDays(newsID);
                         UpdateEffect(companyId, effect);
                     }
                 }
-
-                cnn.Close();
-
-            }
-        }
-
-        private void ClearActiveNews()
-        {
-            string connetionString = "datasource=192.168.1.1;port=3306;username=psb202199;password=psb202199;database=psb202199_stockmarket;";
-
-            using (var cnn = new MySqlConnection(connetionString))
-            {
-                cnn.Open();
-
-                var command = cnn.CreateCommand();
-                command.CommandText = "UPDATE news SET active = 0";
-                command.ExecuteReader();
 
                 cnn.Close();
 
@@ -945,14 +990,13 @@ namespace StockMarket
         {
             Random random = new Random();
 
-            int chance = random.Next(1, 4);
-            while (counter > 0){ UpdateActiveNews(); counter--; pictureBox5.Visible = true; }
+            int chance = random.Next(1, 20);
+            if (counter > 0){ counter--; pictureBox5.Visible = true; }
 
             if (chance == 1) // NEWS HAPPENS
             {
                 counter = 7;
                 pictureBox5.Visible = true;
-                pictureBox6.Visible = true;
                 int value = random.Next(1, 101);
                 if (value > 80)
                 {
@@ -965,8 +1009,6 @@ namespace StockMarket
                 }
             } 
             //NORMAL FLUCTUATION OF STOCK PRICE
-            UpdateStocks();
-            UpdateUserInfo();
 
 
             Point scrollPosition = panel1.AutoScrollPosition;
@@ -1121,9 +1163,11 @@ namespace StockMarket
             {
                 var text = date.ToString("MMM d") + GetDaySuffix(date.Day) + ", " + date.Year.ToString();
                 button.Text = text;
+                UpdateActiveNews();
+                UpdateStocks();
+                UpdateUserInfo();
 
-
-                    NewWeek(label3.Text, date);
+                NewWeek(label3.Text, date);
                 
             });
         }
