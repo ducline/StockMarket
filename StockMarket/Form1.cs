@@ -40,7 +40,7 @@ namespace StockMarket
                     int yLocation = 10;
                     while (result.Read())
                     {
-                        if (load) { counter = 7; load = false; }
+                        if (load) { load = false; UpdateActiveNews(); UpdateUserInfo(); }
 
                         string title = result.GetString(0);
                         string description = result.GetString(1);
@@ -685,6 +685,15 @@ namespace StockMarket
 
         //END INFO UPDATER
 
+        private int FindCompanyIdByName(string company)
+        {
+            //test
+        }
+
+        private void DeclareBankRupticy(string company)
+        {
+            int id = FindCompanyIdByName(company);
+        }
 
         private void ChangeStockValue(string company, int valuetochange)
         {
@@ -711,8 +720,12 @@ namespace StockMarket
                     }
                 }
 
+                if (value > 850) { value -= 5; }
+
                 command.CommandText = "UPDATE company SET stock_price = " + value + ", oldprice = " + oldvalue + " WHERE name = '" + company + "'";
                 command.ExecuteReader();
+
+                if (value < 50) { DeclareBankRupticy(company); }
             }
         }
 
@@ -731,7 +744,8 @@ namespace StockMarket
                     Random random = new Random();
                     while (result.Read())
                     {
-                        int value = random.Next(-17, 15);
+                        int value = random.Next(-18, 15);
+                        if(result.GetString(1) == "Briareus") { value += 5; }
                         ChangeStockValue(result.GetString(1), value);
 
 
@@ -879,7 +893,7 @@ namespace StockMarket
             }
 
             return companyid;
-        }.
+        }
 
         private void UpdateEffect(int companyId, int effect)
         {
@@ -891,7 +905,7 @@ namespace StockMarket
                 cnn.Open();
 
                 var command = cnn.CreateCommand();
-                command.CommandText = "UPDATE company SET stock_price = " + (newvalue * 2) + " WHERE companyID = " + companyId;
+                command.CommandText = "UPDATE company SET stock_price = " + newvalue + " WHERE companyID = " + companyId;
                 command.ExecuteReader();
 
                 cnn.Close();
@@ -967,6 +981,8 @@ namespace StockMarket
 
                 var command = cnn.CreateCommand();
                 command.CommandText = "SELECT newsID FROM news WHERE active = 1";
+                bool existingnews = false;
+
                 using (var result = command.ExecuteReader())
                 {
                     while (result.Read())
@@ -975,27 +991,28 @@ namespace StockMarket
                         int effect = FindEffectbyNewsId(newsID);
                         int companyId = FindCompanyIdbyNewsId(newsID);
 
+                        existingnews = true;
+
                         DecreaseRemainingDays(newsID);
                         UpdateEffect(companyId, effect);
                     }
                 }
+
+                if(existingnews) { pictureBox5.Visible = true; } else { pictureBox5.Visible = false; }
 
                 cnn.Close();
 
             }
         }
 
-        int counter = 0;
         private void UpdateInfo(string Button)
         {
             Random random = new Random();
 
-            int chance = random.Next(1, 20);
-            if (counter > 0){ counter--; pictureBox5.Visible = true; }
+            int chance = random.Next(1, 15);
 
             if (chance == 1) // NEWS HAPPENS
             {
-                counter = 7;
                 pictureBox5.Visible = true;
                 int value = random.Next(1, 101);
                 if (value > 80)
@@ -1008,7 +1025,6 @@ namespace StockMarket
                     CreateNews(true);
                 }
             } 
-            //NORMAL FLUCTUATION OF STOCK PRICE
 
 
             Point scrollPosition = panel1.AutoScrollPosition;
@@ -1163,7 +1179,9 @@ namespace StockMarket
             {
                 var text = date.ToString("MMM d") + GetDaySuffix(date.Day) + ", " + date.Year.ToString();
                 button.Text = text;
+
                 UpdateActiveNews();
+                //NORMAL FLUCTUATION OF STOCK PRICE
                 UpdateStocks();
                 UpdateUserInfo();
 
