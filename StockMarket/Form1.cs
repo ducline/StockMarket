@@ -445,24 +445,40 @@ namespace StockMarket
                         change.Text = Math.Abs(fluctuation).ToString();
                         change.Font = new Font(change.Font.Name, 20, FontStyle.Bold);
                         change.TextAlign = ContentAlignment.MiddleCenter;
+                        int bankruptcy = (int)result.GetValue(5);
 
-                        NumericUpDown amount = new NumericUpDown();
-                        amount.Size = new Size(50, 30);
-                        amount.Location = new Point(725, yLocation);
-                        amount.Parent = this.panel1;
-                        amount.Increment = 5;
-                        amount.Value = 5;
-                        amount.TabIndex = 2;
-                        amount.Name = result.GetString(1);
+                        if (bankruptcy == 0)
+                        {
+                            NumericUpDown amount = new NumericUpDown();
+                            amount.Size = new Size(50, 30);
+                            amount.Location = new Point(725, yLocation);
+                            amount.Parent = this.panel1;
+                            amount.Increment = 5;
+                            amount.Value = 5;
+                            amount.TabIndex = 2;
+                            amount.Name = result.GetString(1);
 
-                        Button buystock = new Button();
-                        buystock.Text = "BUY";
-                        buystock.Size = new Size(50, 30);
-                        buystock.Location = new Point(650, yLocation);
-                        buystock.Parent = this.panel1;
-                        buystock.TabIndex = 1;
-                        buystock.Name = result.GetString(1);
-                        buystock.Click += Buystock_Click;
+                            Button buystock = new Button();
+                            buystock.Text = "BUY";
+                            buystock.Size = new Size(50, 30);
+                            buystock.Location = new Point(650, yLocation);
+                            buystock.Parent = this.panel1;
+                            buystock.TabIndex = 1;
+                            buystock.Name = result.GetString(1);
+                            buystock.Click += Buystock_Click;
+                        } else
+                        {
+                            Label bankrupt = new Label();
+                            bankrupt.MaximumSize = new Size(800, 50);
+                            bankrupt.AutoSize = true;
+                            bankrupt.Location = new Point(650, yLocation);
+                            panel1.Controls.Add(bankrupt);
+                            bankrupt.Text = "BANKRUPT";
+                            bankrupt.ForeColor = Color.Red;
+                            bankrupt.Font = new Font(bankrupt.Font.Name, 20, FontStyle.Bold);
+                            bankrupt.TextAlign = ContentAlignment.MiddleCenter;
+                            bankrupt.Name = result.GetString(1);
+                        }
 
                         yLocation += 50;
                     }
@@ -531,7 +547,7 @@ namespace StockMarket
                         cash = (int)result.GetValue(0);
                         stock = (int)result.GetValue(1);
 
-                        if ((cash - price) < 0) { button.Text = "INSUFFICIENT MONEY"; button.ForeColor = Color.Red; return; }
+                        if ((cash - price) < 0) { button.Text = "INSUFFICIENT MONEY"; button.ForeColor = Color.Red; return; } else { button.Text = "BUY"; button.ForeColor = Color.White; }
 
                         stock += stockamount;
                         cash -= price;
@@ -685,14 +701,104 @@ namespace StockMarket
 
         //END INFO UPDATER
 
-        private int FindCompanyIdByName(string company)
+        private int FindCompanyIdbyName(string company)
         {
-            //test
+            string connetionString = "datasource=192.168.1.1;port=3306;username=psb202199;password=psb202199;database=psb202199_stockmarket;";
+            int companyID = 0;
+
+            using (var cnn = new MySqlConnection(connetionString))
+            {
+                cnn.Open();
+
+                var command = cnn.CreateCommand();
+                command.CommandText = "SELECT companyID FROM company WHERE name = '" + company + "'";
+                using (var result = command.ExecuteReader())
+                {
+                    while (result.Read())
+                    {
+                        companyID = (int)result.GetValue(0);
+                    }
+                }
+
+            }
+
+            return companyID;
         }
 
-        private void DeclareBankRupticy(string company)
+        private void DeclareBankRupticy(string company, bool activation)
         {
-            int id = FindCompanyIdByName(company);
+            int companyID = FindCompanyIdbyName(company);
+            int stockvalue = FindCompanyStockValueById(companyID);
+
+            Random random = new Random();
+            int value = random.Next(1, 10);
+
+            if(value == 1 || stockvalue <= 5)
+            {
+                string connetionString = "datasource=192.168.1.1;port=3306;username=psb202199;password=psb202199;database=psb202199_stockmarket;";
+                int bankrupt = 0;
+
+                using (var cnn = new MySqlConnection(connetionString))
+                {
+                    cnn.Open();
+
+                    var command = cnn.CreateCommand();
+                    command.CommandText = "SELECT bankrupt FROM company WHERE name = '" + company + "'";
+                    using (var result = command.ExecuteReader())
+                    {
+                        while (result.Read())
+                        {
+                            bankrupt = (int)result.GetValue(0);
+                        }
+                    }
+
+                }
+
+                if(bankrupt == 0 && activation)
+                {
+                    //Activate bankruptcy
+                    using (var cnn = new MySqlConnection(connetionString))
+                    {
+                        cnn.Open();
+
+                        var command = cnn.CreateCommand();
+                        command.CommandText = "UPDATE company SET stock_price = 0, bankrupt = 1 WHERE name = '" + company + "'";
+                        command.ExecuteReader();
+
+                    }
+
+                    //DELETE BOUGHTSTOCK RIP MONEY
+                    using (var cnn = new MySqlConnection(connetionString))
+                    {
+                        cnn.Open();
+
+
+                        var command = cnn.CreateCommand();
+                        command.CommandText = "DELETE FROM boughtstock WHERE companyid = " + companyID;
+                        command.ExecuteReader();
+
+                    }
+
+                }
+                else if(bankrupt == 1 && !activation)
+                {
+                    //Deactivate bankruptcy
+                    using (var cnn = new MySqlConnection(connetionString))
+                    {
+                        int newstockvalue = stockvalue + 15;
+
+                        cnn.Open();
+
+                        var command = cnn.CreateCommand();
+                        command.CommandText = "UPDATE company SET bankrupt = 0, stock_price = " + stockvalue + " WHERE name = '" + company + "'";
+                        command.ExecuteReader();
+
+                    }
+
+                }
+
+
+            }
         }
 
         private void ChangeStockValue(string company, int valuetochange)
@@ -725,7 +831,7 @@ namespace StockMarket
                 command.CommandText = "UPDATE company SET stock_price = " + value + ", oldprice = " + oldvalue + " WHERE name = '" + company + "'";
                 command.ExecuteReader();
 
-                if (value < 50) { DeclareBankRupticy(company); }
+                if (value < 50) { DeclareBankRupticy(company, true); } else { DeclareBankRupticy(company, false); }
             }
         }
 
@@ -744,7 +850,7 @@ namespace StockMarket
                     Random random = new Random();
                     while (result.Read())
                     {
-                        int value = random.Next(-18, 15);
+                        int value = random.Next(-17, 15);
                         if(result.GetString(1) == "Briareus") { value += 5; }
                         ChangeStockValue(result.GetString(1), value);
 

@@ -35,7 +35,7 @@ namespace StockMarket.Pages
                     while (result.Read())
                     {
                         label1.Text = result.GetValue(8).ToString();
-                        label2.Text = result.GetValue(7).ToString();
+                        label2.Text = result.GetValue(2).ToString();
                     }
                 }
             }

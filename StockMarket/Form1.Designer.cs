@@ -32,7 +32,6 @@
             this.label1 = new System.Windows.Forms.Label();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.pictureBox5 = new System.Windows.Forms.PictureBox();
-            this.button9 = new System.Windows.Forms.Button();
             this.button8 = new System.Windows.Forms.Button();
             this.button7 = new System.Windows.Forms.Button();
             this.button5 = new System.Windows.Forms.Button();
@@ -76,7 +75,6 @@
             // groupBox1
             // 
             this.groupBox1.Controls.Add(this.pictureBox5);
-            this.groupBox1.Controls.Add(this.button9);
             this.groupBox1.Controls.Add(this.button8);
             this.groupBox1.Controls.Add(this.button7);
             this.groupBox1.Controls.Add(this.button5);
@@ -99,19 +97,6 @@
             this.pictureBox5.TabIndex = 22;
             this.pictureBox5.TabStop = false;
             this.pictureBox5.Visible = false;
-            // 
-            // button9
-            // 
-            this.button9.BackColor = System.Drawing.Color.Transparent;
-            this.button9.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button9.Font = new System.Drawing.Font("Arial Rounded MT Bold", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button9.ForeColor = System.Drawing.Color.ForestGreen;
-            this.button9.Location = new System.Drawing.Point(10, 159);
-            this.button9.Name = "button9";
-            this.button9.Size = new System.Drawing.Size(130, 30);
-            this.button9.TabIndex = 8;
-            this.button9.Text = "SHOP";
-            this.button9.UseVisualStyleBackColor = false;
             // 
             // button8
             // 
@@ -385,7 +370,6 @@
         private System.Windows.Forms.Button button5;
         private System.Windows.Forms.Button button7;
         private System.Windows.Forms.Button button8;
-        private System.Windows.Forms.Button button9;
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.PictureBox pictureBox2;
         private System.Windows.Forms.PictureBox pictureBox3;
